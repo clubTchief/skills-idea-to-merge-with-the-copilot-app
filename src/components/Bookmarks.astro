@@ -1,70 +1,240 @@
 ---
-// Bookmarks component (scaffold).
-//
-// The markup below renders during the static build. The dynamic behavior —
-// adding a bookmark, generating a short slug, and persisting to the browser —
-// must run ONLY in the client-side <script> boundary at the bottom of this
-// file. Astro runs that script in the browser, never during the build, so
-// browser-only APIs are safe there.
-//
-// You will implement the behavior in Step 3.
 ---
-<form id="add-bookmark">
-  <div class="field">
-    <label for="url">Link to save</label>
-    <input
-      id="url"
-      name="url"
-      type="text"
-      inputmode="url"
-      autocomplete="off"
-      spellcheck="false"
-      placeholder="https://example.com"
-      required
-    />
+<section class="bookmarks-panel" aria-labelledby="bookmarks-title">
+  <div class="panel-heading">
+    <span class="eyebrow">YOUR PERSONAL LINK LIBRARY</span>
+    <h2 id="bookmarks-title">Keep the good ones close.</h2>
+    <p>Save a link and give it a little Mona-made shortcut.</p>
   </div>
-  <button type="submit">Add bookmark</button>
-</form>
 
-<p class="hint">Paste a URL and select <strong>Add bookmark</strong> to generate its short <code>mona-</code> slug.</p>
+  <form id="add-bookmark">
+    <div class="field">
+      <label for="url">Link to save</label>
+      <input
+        id="url"
+        name="url"
+        type="text"
+        inputmode="url"
+        autocomplete="url"
+        spellcheck="false"
+        placeholder="example.com/article"
+        required
+      />
+    </div>
+    <button type="submit">Add bookmark <span aria-hidden="true">↗</span></button>
+  </form>
 
-<p id="empty-state" class="empty">No bookmarks yet — add your first link above.</p>
+  <p class="hint">A missing <code>https://</code> is no problem — we’ll add it for you.</p>
+  <p id="bookmark-message" class="message" role="status" aria-live="polite"></p>
 
-<div id="list-header" hidden>
-  <h2 class="list-title">Saved bookmarks</h2>
-  <button id="clear-all" type="button" class="clear">Clear all</button>
-</div>
+  <p id="empty-state" class="empty">
+    <span class="empty-icon" aria-hidden="true">✳</span>
+    No bookmarks yet. Your next great find belongs here.
+  </p>
 
-<ul id="bookmark-list" aria-label="Saved bookmarks" aria-live="polite">
-  <!-- Bookmarks render here in the browser. -->
-</ul>
+  <div id="list-header" class="list-header" hidden>
+    <h3 class="list-title">Saved bookmarks</h3>
+    <button id="clear-all" type="button" class="clear">Clear all</button>
+  </div>
+
+  <ul id="bookmark-list" class="bookmark-list" aria-label="Saved bookmarks" aria-live="polite">
+    <!-- Bookmarks render here in the browser. -->
+  </ul>
+</section>
+
+<style is:global>
+  .bookmarks-panel {
+    overflow: hidden;
+    padding: clamp(1.25rem, 5vw, 2rem);
+    border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--border));
+    border-radius: 1.15rem;
+    background:
+      radial-gradient(ellipse at 100% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 38%),
+      color-mix(in srgb, currentColor 3%, transparent);
+    box-shadow: 0 1.25rem 3.5rem color-mix(in srgb, currentColor 8%, transparent);
+  }
+  .panel-heading { margin-bottom: 1.5rem; }
+  .panel-heading .eyebrow {
+    color: var(--accent);
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+  }
+  .panel-heading h2 {
+    margin: 0.5rem 0 0.35rem;
+    font-family: var(--font-head);
+    font-size: clamp(1.4rem, 4vw, 1.9rem);
+    line-height: 1.2;
+  }
+  .panel-heading p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+  .bookmarks-panel form { margin-top: 0; }
+  .bookmarks-panel input { min-width: 0; }
+  .bookmarks-panel input::placeholder { color: var(--muted); opacity: 0.75; }
+  .bookmarks-panel form button { white-space: nowrap; }
+  .bookmarks-panel .hint { margin-bottom: 1.25rem; }
+  .bookmarks-panel code { font-family: var(--font-body); }
+  .bookmarks-panel .message {
+    min-height: 1.25rem;
+    margin: -0.75rem 0 0.75rem;
+    color: var(--accent);
+    font-size: 0.8rem;
+  }
+  .bookmarks-panel .message[data-error="true"] { color: #dc5b55; }
+  .bookmarks-panel [hidden] { display: none !important; }
+  .bookmarks-panel .empty { display: grid; justify-items: center; gap: 0.5rem; }
+  .bookmarks-panel .empty-icon { color: var(--accent); font-size: 1.35rem; }
+  .bookmarks-panel .list-header { margin-top: 1.5rem; }
+  .bookmarks-panel .list-title { font-size: 0.95rem; }
+  .bookmarks-panel .bookmark-list { gap: 0.65rem; }
+  .bookmarks-panel li.bookmark {
+    gap: 0.4rem 0.6rem;
+    padding: 0.75rem;
+    background: color-mix(in srgb, currentColor 2%, transparent);
+  }
+  .bookmarks-panel .bookmark .url {
+    min-width: 0;
+    color: inherit;
+    font-size: 0.85rem;
+    text-decoration-color: color-mix(in srgb, var(--accent) 55%, transparent);
+    text-underline-offset: 0.2em;
+  }
+  .bookmarks-panel .bookmark .separator { color: var(--muted); white-space: pre; }
+  .bookmarks-panel .bookmark .slug {
+    flex: 0 0 auto;
+    font-family: var(--font-body);
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+  .bookmarks-panel .bookmark .copy { flex: 0 0 auto; }
+  @media (max-width: 30rem) {
+    .bookmarks-panel form button { width: 100%; }
+    .bookmarks-panel li.bookmark { align-items: flex-start; }
+    .bookmarks-panel .bookmark .url { flex-basis: 100%; }
+  }
+</style>
 
 <script>
-  // CLIENT-SIDE BOUNDARY — runs in the browser only.
-  //
-  // TODO (Step 3): implement the bookmarks feature here.
-  //   1. On form submit, call event.preventDefault() FIRST so the page
-  //      never reloads, then read and validate the original URL.
-  //   2. Generate a short slug with a "mona-" prefix (for example, base62
-  //      of a counter or hash → "mona-7fk2").
-  //   3. Save the original URL and its slug, then persist them in the browser.
-  //   4. Render each saved bookmark into #bookmark-list as a row (li.bookmark) with:
-  //        - the original URL as a link (.url) that opens in a new tab,
-  //        - its short slug shown as a badge (.slug), and
-  //        - a "Copy" button (.copy) that copies the slug.
-  //   5. Toggle empty vs. saved state: hide #empty-state and show #list-header
-  //      (the "Saved bookmarks" heading + "Clear all" button) once at least one
-  //      bookmark exists; reverse it when the list is empty.
-  //   6. Wire the #clear-all button to remove every saved bookmark (clear the
-  //      list, clear browser storage) after a quick confirm.
-  //   7. On page load, read the saved bookmarks from storage and render
-  //      them so the list persists across reloads.
-  //
-  // Because this code lives in a client <script>, browser storage APIs are
-  // safe to use here without breaking the static build.
+  import {
+    formatBookmark,
+    generateSlug,
+    loadBookmarks,
+    normalizeUrl,
+  } from '../lib/bookmarks.js';
+
+  const storageKey = 'mona-bookmarks';
   const form = document.getElementById('add-bookmark');
+  const input = document.getElementById('url');
+  const list = document.getElementById('bookmark-list');
+  const emptyState = document.getElementById('empty-state');
+  const listHeader = document.getElementById('list-header');
+  const clearButton = document.getElementById('clear-all');
+  const message = document.getElementById('bookmark-message');
+
+  const readStoredBookmarks = () => {
+    try {
+      return loadBookmarks(window.localStorage.getItem(storageKey));
+    } catch {
+      return [];
+    }
+  };
+
+  let bookmarks = readStoredBookmarks();
+
+  const setMessage = (text, isError = false) => {
+    if (!message) return;
+    message.textContent = text;
+    message.dataset.error = String(isError);
+  };
+
+  const persistBookmarks = () => {
+    try {
+      window.localStorage.setItem(storageKey, JSON.stringify(bookmarks));
+      return true;
+    } catch {
+      setMessage('Could not save bookmarks in this browser. Check its storage settings.', true);
+      return false;
+    }
+  };
+
+  const renderBookmarks = () => {
+    if (!list || !emptyState || !listHeader) return;
+    list.replaceChildren();
+    for (const bookmark of bookmarks) {
+      const row = document.createElement('li');
+      row.className = 'bookmark';
+
+      const link = document.createElement('a');
+      link.className = 'url';
+      link.href = bookmark.url;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.textContent = bookmark.url;
+
+      const separator = document.createElement('span');
+      separator.className = 'separator';
+      separator.setAttribute('aria-hidden', 'true');
+      separator.textContent = ' :: ';
+
+      const slug = document.createElement('code');
+      slug.className = 'slug';
+      slug.textContent = bookmark.slug;
+      slug.setAttribute('aria-label', formatBookmark(bookmark));
+
+      const copyButton = document.createElement('button');
+      copyButton.className = 'copy';
+      copyButton.type = 'button';
+      copyButton.textContent = 'Copy';
+      copyButton.setAttribute('aria-label', `Copy ${bookmark.slug}`);
+      copyButton.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(bookmark.slug);
+          setMessage(`Copied ${bookmark.slug} to clipboard.`);
+        } catch {
+          setMessage('Clipboard access is unavailable in this browser.', true);
+        }
+      });
+
+      row.append(link, separator, slug, copyButton);
+      list.append(row);
+    }
+    const hasBookmarks = bookmarks.length > 0;
+    emptyState.hidden = hasBookmarks;
+    listHeader.hidden = !hasBookmarks;
+  };
+
   form?.addEventListener('submit', (event) => {
-    event.preventDefault(); // keep this — stops the page from reloading
-    // Implement in Step 3.
+    event.preventDefault();
+    if (!(input instanceof HTMLInputElement)) return;
+    try {
+      const url = normalizeUrl(input.value);
+      let slug = generateSlug();
+      while (bookmarks.some((bookmark) => bookmark.slug === slug)) slug = generateSlug();
+      bookmarks = [...bookmarks, { url, slug }];
+      if (!persistBookmarks()) {
+        bookmarks = bookmarks.slice(0, -1);
+        return;
+      }
+      input.value = '';
+      setMessage(`Saved as ${slug}.`);
+      renderBookmarks();
+    } catch {
+      setMessage('Enter a valid website address, such as example.com.', true);
+      input.focus();
+    }
   });
+
+  clearButton?.addEventListener('click', () => {
+    if (bookmarks.length === 0 || !window.confirm('Clear all saved bookmarks?')) return;
+    const previousBookmarks = bookmarks;
+    bookmarks = [];
+    if (!persistBookmarks()) {
+      bookmarks = previousBookmarks;
+      renderBookmarks();
+      return;
+    }
+    setMessage('All bookmarks cleared.');
+    renderBookmarks();
+  });
+
+  renderBookmarks();
 </script>
